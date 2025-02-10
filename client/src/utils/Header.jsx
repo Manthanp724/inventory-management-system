@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
-    <div className="flex justify-between items-center h-16 bg-white shadow-md px-8 rounded-lg">
+    <div className="flex justify-between items-center h-13 bg-white shadow-md px-8 rounded-lg">
       <div className="pl-4">
         <Link className="text-3xl font-bold text-gray-800 hover:text-blue-600 transition-colors duration-300">
           IMS
@@ -25,7 +25,7 @@ const Header = () => {
           In Stock
         </Link>
         <Link
-          className="text-lg font-normal text-gray-600 hover:text-blue-600 transition-colors duration-300"
+          className="text-lg font-normal text-gray-600 hover:text-blue-600 transition-colors"
           to="/product"
         >
           Products
@@ -36,7 +36,7 @@ const Header = () => {
         <img
           src={image} 
           alt="Profile"
-          className="w-12 h-12 rounded-full object-cover border-2 border-gray-300 shadow-lg transform transition-transform duration-300 hover:scale-110"
+          className="w-10 h-10 rounded-full object-cover border-2 border-gray-300 shadow-lg transform transition-transform duration-300 hover:scale-110"
         />
       </div>
     </div>

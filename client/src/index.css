@@ -1,4 +1,4 @@
-@import "tailwindcss";  /* Optional, if you want the v4 version to load */
+@import "tailwindcss";  
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
