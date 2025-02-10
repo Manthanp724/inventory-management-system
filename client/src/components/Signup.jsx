@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import image from "../assets/image.png"; // Import image
-import { Link } from 'react-router-dom';
+import image from "../assets/image.png";
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+// const navigate = useNavigate();
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -8,104 +12,103 @@ const Signup = () => {
   const [phone, setPhone] = useState("");
   const [organizationName, setOrganizationName] = useState('');
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(""); // For storing error messages
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
-    console.log("Form submitted:", {
-      name,
-      email,
-      phone,
-      organizationName,
-      password,
-    });
+    try {
+      const response = await axios.post(`${backendUrl}/user/v1/signup` , {
+        name , email , phone , organizationName , password
+      });
+      // Assuming successful signup and moving to the dashboard page
+      // navigate('/dashboard');
+      console.log("Response: ", response.data);
+    } catch (error) {
+      setError("An error has occured while submitting the from");
+    }
+    console.log("Form submitted:", { name, email, phone, organizationName, password });
   };
 
   return (
-    <div className="flex flex-col-reverse md:flex-row min-h-screen">
+    <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-6">
+      <div className="bg-white shadow-2xl rounded-xl flex flex-row w-full max-w-5xl overflow-hidden transform transition-all hover:scale-105 duration-300">
 
-      {/* Left side with image */}
-      <div className="w-full md:w-2/5 flex items-center justify-center">
-        <img src={image} alt="Image" className="max-w-full max-h-full object-cover" />
-      </div>
+        {/* Left Side - Image */}
+        <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-700 items-center justify-center p-6">
+          <img src={image} alt="Signup" className="w-72 lg:w-96 object-contain drop-shadow-2xl" />
+        </div>
 
-      {/* Right side with form */}
-      <div className="w-full md:w-3/5 flex items-center justify-center p-4">
-        <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-lg">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Register</h2>
-          <p className="text-gray-600 text-sm mb-4 text-center">
-            Manage all your inventory efficiently. Let's get you all set up.
-          </p>
+        {/* Right Side - Form */}
+        <div className="w-full md:w-1/2 p-10 flex flex-col items-center justify-center">
+          <div className="w-full max-w-sm">
+            <h2 className="text-3xl font-bold text-gray-800 text-center mb-2">Register</h2>
+            <p className="text-gray-600 text-sm text-center mb-6">
+              Manage all your inventory efficiently. Let's get you all set up.
+            </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <input
                 type="text"
                 placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 required
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-2 border rounded-lg"
-                required
-              />
-              <input
-                type="tel"
-                placeholder="Phone no."
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full p-2 border rounded-lg"
-                required
-              />
-            </div>
+              <div className="flex gap-3">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  required
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone no."
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  required
+                />
+              </div>
 
-            <div className="grid grid-cols-1 gap-4">
               <input
                 type="text"
                 placeholder="Organization Name"
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 required
               />
-            </div>
 
-            <div className="grid grid-cols-1 gap-4">
               <input
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 required
               />
-            </div>
 
-            <div className="flex items-center">
-              <label className="text-gray-600 text-sm">
-                I agree to all terms, <a href="#" className="text-blue-500">privacy policies</a>, and fees.
-              </label>
-            </div>
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105"
+                onClick={handleSubmit}
+              >
+                Sign up
+              </button>
 
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              Sign up
-            </button>
-
-            <p className="text-sm text-gray-600 text-center mt-2">
-              Already have an account? <Link to= "/" className="text-blue-500">Log in</Link>
-            </p>
-          </form>
+              <p className="text-sm text-gray-600 text-center mt-4">
+                Already have an account?{" "}
+                <Link to="/" className="text-blue-600 font-semibold hover:underline">
+                  Log in
+                </Link>
+              </p>
+            </form>
+          </div>
         </div>
       </div>
     </div>
