@@ -32,8 +32,8 @@ Ensure you have the following installed:
    ```
 2. Install dependencies:
    ```sh
-   cd backend && npm install
-   cd ../frontend && npm install
+   cd server && npm install
+   cd ../client && npm install
    ```
 3. Set up environment variables:
    - Create a `.env` file in the `backend` directory and add the following:
@@ -43,11 +43,11 @@ Ensure you have the following installed:
      ```
 4. Start the backend server:
    ```sh
-   cd backend && npm start
+   cd server && npm start
    ```
 5. Start the frontend application:
    ```sh
-   cd frontend && npm start
+   cd client && npm start
    ```
 6. Open the application in your browser at `http://localhost:3000/`
 
