@@ -2,18 +2,16 @@ import React from "react";
 
 const Search = () => {
   return (
-    <div>
-      <form class="w-3/4 mx-auto">
-        <label
-          for="default-search"
-          class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
-        >
+    <div className="w-full max-w-2xl mx-auto">
+      <form>
+        <label htmlFor="default-search" className="sr-only">
           Search
         </label>
-        <div class="relative">
-          <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+        <div className="relative">
+          {/* Search Icon */}
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <svg
-              class="w-4 h-4 text-gray-500 dark:text-gray-400"
+              className="w-5 h-5 text-gray-500 dark:text-gray-400"
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -21,23 +19,27 @@ const Search = () => {
             >
               <path
                 stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
                 d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
               />
             </svg>
           </div>
+
+          {/* Input Field */}
           <input
             type="search"
             id="default-search"
-            class="text-md font-semibold block w-full p-3 ps-10 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="Customer,Orders,Organiza.."
+            className="block w-full p-3 pl-10 text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:focus:ring-blue-600 dark:focus:border-blue-600"
+            placeholder="Search for customers, orders, organizations..."
             required
           />
+
+          {/* Search Button */}
           <button
             type="submit"
-            class="cursor-pointer text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-1  dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            className="py-2 absolute right-2.5 bottom-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-5  rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 shadow-lg"
           >
             Search
           </button>
