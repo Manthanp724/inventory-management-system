@@ -4,6 +4,7 @@ const { default: mongoose } = require('mongoose');
 require('dotenv').config();
 const ConnectDB = require("./DB/ConnectDB")
 const userRoutes = require("./Routes/userRoutes.js")
+const productRoute = require("./Routes/productRoute.js")
 
 const app = express()
 const port = process.env.PORT;
@@ -14,8 +15,11 @@ app.use(express.json());
 app.use(cors())
 
 // Manual routing
-
+// User Route
 app.use('/user/v1', userRoutes)
+
+// Product Route
+app.use(productRoute)
 
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
