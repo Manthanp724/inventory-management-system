@@ -19,10 +19,9 @@ const productSchema = new mongoose.Schema({
         required: true,
         default: 0,  // This tracks available stock
     },
-    totalSold: {
-        type: Number,
-        default: 0,  // Renamed from sold to totalSold
-    },
+    description : {
+        type : String
+    }
 }, { timestamps: true });
 
 const Product = mongoose.model('Product', productSchema, 'Product');
