@@ -6,6 +6,7 @@ const ConnectDB = require("./DB/ConnectDB")
 const userRoutes = require("./Routes/userRoutes.js")
 const productRoute = require("./Routes/productRoute.js")
 const categoryRoute = require("./Routes/categoryRoute.js")
+const orderRoute = require("./Routes/orderRoute.js")
 
 const app = express()
 const port = process.env.PORT;
@@ -24,6 +25,9 @@ app.use(productRoute)
 
 // Category routes
 app.use('/category', categoryRoute)
+
+// Order Route
+app.use('/order' , orderRoute);
 
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
