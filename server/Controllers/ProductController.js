@@ -36,11 +36,38 @@ const addProduct = async (req, res) => {
 
 const getAllProduct = async (req, res) => {
   try {
-    const products = await Product.find().populate("category", "name");
-    const count = await Product.countDocuments();
-    res.status(200).json({ message: "Success", totalPoducts: count, products });
+    const { search, category, minPrice, maxPrice, sort, order } = req.query;
+    let filter = {};
+
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
+
+    if (category) {
+      filter.category = category;
+    }
+
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+
+    let sortOptions = {};
+    if (sort) {
+      const sortFields = { name: "name", price: "price", date: "createdAt" };
+      sortOptions[sortFields[sort] || "createdAt"] = order === "asc" ? 1 : -1;
+    }
+
+    const products = await Product.find(filter)
+      .populate("category", "name")
+      .sort(sortOptions);
+
+    const count = await Product.countDocuments(filter);
+
+    res.status(200).json({ message: "Success", totalProducts: count, products });
   } catch (error) {
-    res.status(500).josn("Error while getting all products", error.message);
+    res.status(500).json({ message: "Error while getting all products", error: error.message });
   }
 };
 

@@ -44,18 +44,36 @@ const createOrder = async(req , res) => {
     }
 }
 
-const getAllOrders = async(req,res) => {
+const getAllOrders = async (req, res) => {
     try {
+        const { customerEmail, sort, startDate, endDate } = req.query;
+        let filter = {};
 
-        // here we are populating just product from products array in Order schema with it's name and price
-        const Orders =  await Order.find().populate("products.product", "name price")
+        if (customerEmail) {
+            filter.customerEmail = { $regex: customerEmail, $options: "i" };
+        }
 
-        res.status(200).json({message : "Success : All orders retrived successfully", Orders})
-        
+        if (startDate && endDate) {
+            filter.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        }
+
+        let query = Order.find(filter).populate("products.product", "name price");
+
+        if (sort) {
+            const sortOptions = { date: "createdAt", amount: "totalAmount" };
+            query = query.sort({ [sortOptions[sort]]: -1 });
+        } else {
+            query = query.sort({ createdAt: -1 }); 
+        }
+
+        const orders = await query;
+
+        res.status(200).json({ message: "Success: All orders retrieved successfully", orders });
     } catch (error) {
-        res.status(401).json({message : "Error", error})
+        res.status(500).json({ message: "Error fetching orders", error: error.message });
     }
-}
+};
+
 
 const getOrderByID = async(req , res) =>  {
     try {

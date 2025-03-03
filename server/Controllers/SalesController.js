@@ -20,18 +20,19 @@ const getTotalSales = async (req, res) => {
     }
 };
 
-// ✅ Get Sales by Category
+// ✅ Get Sales by Category which is not working now.
 const getSalesByCategory = async (req, res) => {
     try {
         const { categoryId } = req.params;
+        const { startDate, endDate, sort } = req.query;
+        let matchStage = { "productDetails.category": new mongoose.Types.ObjectId(categoryId) };
 
-        // Ensure categoryId is a valid ObjectId
-        if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-            return res.status(400).json({ message: "Invalid category ID format" });
+        if (startDate && endDate) {
+            matchStage.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
         }
 
         const salesByCategory = await Order.aggregate([
-            { $unwind: "$products" }, // Break array of products into separate documents
+            { $unwind: "$products" },
             {
                 $lookup: {
                     from: "products",
@@ -40,10 +41,8 @@ const getSalesByCategory = async (req, res) => {
                     as: "productDetails"
                 }
             },
-            { $unwind: "$productDetails" }, // Unwind product details
-            { 
-                $match: { "productDetails.category": new mongoose.Types.ObjectId(categoryId) } 
-            }, // Filter by categoryId
+            { $unwind: "$productDetails" },
+            { $match: matchStage },
             {
                 $group: {
                     _id: "$productDetails.category",
@@ -66,11 +65,11 @@ const getSalesByCategory = async (req, res) => {
                     totalRevenue: 1,
                     totalSold: 1
                 }
-            }
-        ]);
+            },
+            sort ? { $sort: { totalRevenue: sort === "asc" ? 1 : -1 } } : null
+        ].filter(Boolean));
 
         return res.status(200).json({ message: "Sales by category retrieved", salesByCategory });
-
     } catch (error) {
         res.status(500).json({ message: "Error fetching sales by category", error: error.message });
     }
