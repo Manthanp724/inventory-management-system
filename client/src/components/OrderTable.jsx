@@ -1,112 +1,103 @@
 import React, { useState } from "react";
 
-const OrderTable = ({ orders = [] }) => {
-  const [showOrder, setshowOrder] = useState(null);
+const statusColors = {
+  Pending: "bg-yellow-500 text-white",
+  Processing: "bg-blue-500 text-white",
+  Completed: "bg-green-500 text-white",
+  Shipped: "bg-purple-500 text-white",
+};
 
-  if (!orders.length) {
-    return (
-      <p className="text-center text-gray-500 text-lg py-6">No orders found.</p>
-    );
-  }
+const OrderTable = ({ orders, setOrders }) => {
+  const [editingOrderId, setEditingOrderId] = useState(null);
+  const [newStatus, setNewStatus] = useState({});
 
-  const handleViewDescription = (order) => {
-    const description = order.description;
-    setshowOrder(description);
+  const handleStatusChange = (orderId, status) => {
+    setNewStatus((prev) => ({ ...prev, [orderId]: status }));
   };
 
+  const handleUpdateStatus = (orderId) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.id === orderId
+          ? { ...order, status: newStatus[orderId] || order.status }
+          : order
+      )
+    );
+    setEditingOrderId(null); // Hide dropdown after updating
+  };
+
+  if (!orders || orders.length === 0) {
+    return <p className="text-center text-gray-500 text-lg py-6">No orders found.</p>;
+  }
+
   return (
-    <div className="overflow-x-auto rounded-lg shadow-lg">
-      <table className="w-full border-collapse bg-white">
-        <thead className="sticky top-0 bg-gradient-to-r from-blue-500 to-purple-600">
+    <div className="overflow-x-auto rounded-lg shadow-xl bg-white animate-fadeIn">
+      <table className="w-full border-collapse bg-white rounded-lg shadow-md relative">
+        <thead className="bg-blue-600 text-white sticky top-0">
           <tr>
-            <th className="px-6 py-4 text-left text-md font-semibold text-white uppercase tracking-wider">
-              Order Id
-            </th>
-            <th className="px-6 py-4 text-left text-md font-semibold text-white uppercase tracking-wider">
-              Date
-            </th>
-            <th className="px-6 py-4 text-left text-md font-semibold text-white uppercase tracking-wider">
-              Customer
-            </th>
-            <th className="px-6 py-4 text-left text-md font-semibold text-white uppercase tracking-wider">
-              Item Name
-            </th>
-            <th className="px-6 py-4 text-left text-md font-semibold text-white uppercase tracking-wider">
-              Quantity
-            </th>
-            <th className="px-6 py-4 text-left text-md font-semibold text-white uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-4 text-left text-md font-semibold text-white uppercase tracking-wider">
-              Discription
-            </th>
+            <th className="px-6 py-3 text-left font-semibold">Order ID</th>
+            <th className="px-6 py-3 text-left font-semibold">Date(yy/mm/dd)</th>
+            <th className="px-6 py-3 text-left font-semibold">Customer</th>
+            <th className="px-6 py-3 text-left font-semibold">Item Name</th>
+            <th className="px-6 py-3 text-left font-semibold">Quantity</th>
+            <th className="px-6 py-3 text-left font-semibold">Status</th>
+            <th className="px-6 py-3 text-center font-semibold">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody>
           {orders.map((order, index) => (
             <tr
-              key={index}
-              className="hover:bg-gray-50 transition-all duration-200"
+              key={order.id}
+              className="border-b hover:bg-gray-100 transition-transform duration-200 ease-in-out hover:scale-105"
             >
-              <td className="px-7 py-4 whitespace-nowrap text-md text-gray-700">
-                1
+              <td className="px-6 py-4">{index + 1}</td>
+              <td className="px-6 py-4">{order.date}</td>
+              <td className="px-6 py-4">{order.customer}</td>
+              <td className="px-6 py-4">{order.itemName}</td>
+              <td className="px-6 py-4">{order.quantity}</td>
+              <td className="px-6 py-4">
+                {editingOrderId === order.id ? (
+                  <select
+                    value={newStatus[order.id] || order.status}
+                    onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                    className="border p-2 rounded bg-gray-100"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Shipped">Shipped</option>
+                  </select>
+                ) : (
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      statusColors[order.status] || "bg-gray-400 text-white"
+                    }`}
+                  >
+                    {order.status}
+                  </span>
+                )}
               </td>
-              <td className="px-7 py-4 whitespace-nowrap text-md text-gray-700">
-                {order.date}
-              </td>
-              <td className="px-7 py-4 whitespace-nowrap text-md text-gray-700">
-                {order.customer}
-              </td>
-              <td className="px-7 py-4 whitespace-nowrap text-md text-gray-700">
-                {order.itemName}
-              </td>
-              <td className="px-7 py-4 whitespace-nowrap text-md text-gray-700">
-                {order.quantity}
-              </td>
-              <td className="px-7 py-4 whitespace-nowrap">
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-md font-semibold ${
-                    order.status === "Pending"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : order.status === "Process"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-green-100 text-green-800"
-                  }`}
-                >
-                  {order.status}
-                </span>
-              </td>
-              <td className="px-7 py-4 whitespace-nowrap">
-                <button
-                  onClick={() => handleViewDescription(order)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded transition-colors duration-200"
-                >
-                  Details
-                </button>
+              <td className="px-6 py-4 text-center">
+                {editingOrderId === order.id ? (
+                  <button
+                    onClick={() => handleUpdateStatus(order.id)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-blue-600 transition"
+                  >
+                    Save
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setEditingOrderId(order.id)}
+                    className="bg-green-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-green-600 transition"
+                  >
+                    Update
+                  </button>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      {showOrder && (
-        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full transform transition-all duration-300 ease-in-out scale-95 hover:scale-100">
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">
-              Order Description
-            </h1>
-            <h2 className="text-md text-gray-600 mb-6">
-              <h1 className="text-2xl"><strong className="text-gray-800">Description:</strong>{" "}</h1>
-              {showOrder || "No description available."}
-            </h2>
-            <button
-              onClick={() => setshowOrder(null)}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
