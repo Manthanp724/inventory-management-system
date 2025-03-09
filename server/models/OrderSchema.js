@@ -13,9 +13,10 @@ const orderSchema = new mongoose.Schema(
     customerEmail: { type: String, required: true },
     status: {
       type: String,
-      enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+      enum: ['Pending', 'Processing', 'Shipped', 'Cancelled'],
       default: 'Pending',
     },
+    date : { type: Date, required: true },
   },
   { timestamps: true }
 );

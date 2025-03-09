@@ -23,20 +23,22 @@ const Order = () => {
     } else {
       setOrders([...orders, { ...newOrder, id: orders.length + 1 }]);
     }
+    console.log(newOrder);
+
     setShowForm(false);
     setEditOrder(null);
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex flex-col lg:flex-row h-screen bg-gray-100">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden p-4">
         <Header />
-        <div className="p-6 mt-12">
-          <div className="flex justify-between items-center">
+        <div className="mt-12">
+          <div className="flex flex-col lg:flex-row justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-800">Orders</h1>
             <Button
-              className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg shadow-md transform hover:scale-105"
+              className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg shadow-md mt-4 lg:mt-0 transform hover:scale-105"
               onClick={() => {
                 setEditOrder(null);
                 setShowForm(true);
@@ -45,17 +47,17 @@ const Order = () => {
               + New Order
             </Button>
           </div>
-          <div className="mt-2 flex gap-4 items-center">
+          <div className="mt-2 flex flex-col lg:flex-row gap-4 items-center">
             <Search />
-            <button className="flex items-center gap-2 bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+            <button className="flex items-center gap-2 bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition w-full lg:w-auto">
               <FaCalendarAlt /> Date
             </button>
-            <button className="flex items-center gap-2 bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+            <button className="flex items-center gap-2 bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition w-full lg:w-auto">
               <FaFilter /> Filter
             </button>
           </div>
           <div className="mt-4 bg-white p-4 rounded-lg shadow-lg overflow-hidden animate-fadeIn overflow-y-auto h-[calc(100vh-200px)]">
-            {/* ✅ Pass setOrders to OrderTable */}
+            {/* Pass setOrders to OrderTable */}
             <OrderTable orders={orders} setOrders={setOrders} />
           </div>
         </div>
@@ -69,7 +71,7 @@ const Order = () => {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white p-6 rounded-lg shadow-lg w-[500px] relative"
+              className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}

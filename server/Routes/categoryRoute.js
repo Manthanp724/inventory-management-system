@@ -3,9 +3,13 @@ const {addCategory , getAllCategory, updateCategory, deleteCategory} = require('
 
 const router = express.Router();
 
-router.post("/new" , addCategory);
-router.get("/get-category", getAllCategory )
-router.put('/update/:categoryId', updateCategory);
-router.delete('/delete/:categoryId', deleteCategory);
+router.post("/categories", addCategory);
+
+router.get("/categories", getAllCategory);
+
+router.put("/categories/:categoryId", updateCategory);
+
+router.delete("/categories/:categoryId", deleteCategory);
+
 
 module.exports = router;

@@ -3,8 +3,9 @@ import React, { useState } from "react";
 const statusColors = {
   Pending: "bg-yellow-500 text-white",
   Processing: "bg-blue-500 text-white",
-  Completed: "bg-green-500 text-white",
   Shipped: "bg-purple-500 text-white",
+  Delivered: "bg-green-500 text-white",
+  Cancelled: "bg-red-500 text-white",
 };
 
 const OrderTable = ({ orders, setOrders }) => {
@@ -38,8 +39,8 @@ const OrderTable = ({ orders, setOrders }) => {
             <th className="px-6 py-3 text-left font-semibold">Order ID</th>
             <th className="px-6 py-3 text-left font-semibold">Date(yy/mm/dd)</th>
             <th className="px-6 py-3 text-left font-semibold">Customer</th>
-            <th className="px-6 py-3 text-left font-semibold">Item Name</th>
-            <th className="px-6 py-3 text-left font-semibold">Quantity</th>
+            <th className="px-6 py-3 text-left font-semibold">Products</th>
+            <th className="px-6 py-3 text-left font-semibold">Total Amount</th>
             <th className="px-6 py-3 text-left font-semibold">Status</th>
             <th className="px-6 py-3 text-center font-semibold">Actions</th>
           </tr>
@@ -52,26 +53,31 @@ const OrderTable = ({ orders, setOrders }) => {
             >
               <td className="px-6 py-4">{index + 1}</td>
               <td className="px-6 py-4">{order.date}</td>
-              <td className="px-6 py-4">{order.customer}</td>
-              <td className="px-6 py-4">{order.itemName}</td>
-              <td className="px-6 py-4">{order.quantity}</td>
+              <td className="px-6 py-4">{order.customerName}</td>
+              <td className="px-6 py-4">
+                {order.products.map((product, i) => (
+                  <div key={i}>
+                    {product.product} (x{product.quantity})
+                  </div>
+                ))}
+              </td>
+              <td className="px-6 py-4">${order.totalAmount}</td>
               <td className="px-6 py-4">
                 {editingOrderId === order.id ? (
                   <select
                     value={newStatus[order.id] || order.status}
                     onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                    className="border p-2 rounded bg-gray-100"
+                    className="border p-2 rounded bg-gray-100 w-full sm:w-auto"
                   >
                     <option value="Pending">Pending</option>
                     <option value="Processing">Processing</option>
-                    <option value="Completed">Completed</option>
                     <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
                   </select>
                 ) : (
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      statusColors[order.status] || "bg-gray-400 text-white"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColors[order.status] || "bg-gray-400 text-white"}`}
                   >
                     {order.status}
                   </span>

@@ -4,7 +4,7 @@ const Product =  require("../models/ProductSchema.js")
 const createOrder = async(req , res) => {
     try {
 
-        const { products, customerName, customerEmail } = req.body;
+        const { products, customerName, customerEmail , date } = req.body;
 
         if(!products || products.length === 0){
             return res.status(400).json({message : "Order must contain atleast one Item"});
@@ -33,9 +33,15 @@ const createOrder = async(req , res) => {
             await product.save();
         }
 
-        const order = await Order.create({products, totalAmount, customerName, customerEmail });
+        const order = await Order.create({products, totalAmount, customerName, customerEmail, date });
 
-        return res.status(200).json({message : "Success", order});
+        res.status(201).json({
+            message: "Success: Order created successfully",
+            order: {
+              ...order.toObject(),
+              date: order.date, // Ensure date is included in the response
+            }
+          });
 
         
     } catch (error) {

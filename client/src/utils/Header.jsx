@@ -8,7 +8,7 @@ const Header = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-    <header className="bg-gradient-to-r from-blue-500 to-purple-700 text-white shadow-lg px-6 py-3 fixed w-full top-0 z-50">
+    <header className="bg-gradient-to-r from-blue-500 to-purple-700 text-white shadow-lg px-6 py-3 fixed w-full top-0 z-40">
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link
@@ -20,7 +20,7 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex space-x-8">
-          {["Dashboard", "All Orders", "In Stock", "Products"].map((item) => (
+          {["Dashboard", "Orders", "Current Stock", "Slaes"].map((item) => (
             <Link
               key={item}
               to={`/${item.toLowerCase().replace(" ", "")}`}

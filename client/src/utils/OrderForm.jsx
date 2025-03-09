@@ -1,16 +1,35 @@
 import React, { useState } from "react";
 
-const OrderForm = ({ onSubmit }) => {
+const OrderForm = ({ onSubmit, editOrder }) => {
   const [formData, setFormData] = useState({
     date: "",
-    customer: "",
-    itemName: "",
-    quantity: "",
+    customerName: "",
+    customerEmail: "",
+    products: [
+      {
+        product: "",
+        quantity: "",
+      },
+    ],
     status: "Pending",
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e, index) => {
+    const { name, value } = e.target;
+    const newFormData = { ...formData };
+    if (name === "products") {
+      newFormData.products[index][e.target.dataset.name] = value;
+    } else {
+      newFormData[name] = value;
+    }
+    setFormData(newFormData);
+  };
+
+  const addProduct = () => {
+    setFormData({
+      ...formData,
+      products: [...formData.products, { product: "", quantity: "" }],
+    });
   };
 
   const handleSubmit = (e) => {
@@ -27,51 +46,79 @@ const OrderForm = ({ onSubmit }) => {
           name="date"
           value={formData.date}
           onChange={handleChange}
-          className="border p-2 rounded"
+          className="border p-2 rounded w-full"
           required
         />
         <input
           type="text"
-          name="customer"
+          name="customerName"
           placeholder="Customer Name"
-          value={formData.customer}
+          value={formData.customerName}
           onChange={handleChange}
-          className="border p-2 rounded"
+          className="border p-2 rounded w-full"
           required
         />
         <input
-          type="text"
-          name="itemName"
-          placeholder="Item Name"
-          value={formData.itemName}
+          type="email"
+          name="customerEmail"
+          placeholder="Customer Email"
+          value={formData.customerEmail}
           onChange={handleChange}
-          className="border p-2 rounded"
+          className="border p-2 rounded w-full"
           required
         />
-        <input
-          type="number"
-          name="quantity"
-          placeholder="Quantity"
-          value={formData.quantity}
-          onChange={handleChange}
-          className="border p-2 rounded"
-          required
-        />
-        {/* Status Dropdown */}
+
+        {/* Product Inputs */}
+        {formData.products.map((product, index) => (
+          <div key={index} className="flex gap-4">
+            <input
+              type="text"
+              name="products"
+              data-name="product"
+              placeholder="Product"
+              value={product.product}
+              onChange={(e) => handleChange(e, index)}
+              className="border p-2 rounded w-full"
+              required
+            />
+            <input
+              type="number"
+              name="products"
+              data-name="quantity"
+              placeholder="Quantity"
+              value={product.quantity}
+              onChange={(e) => handleChange(e, index)}
+              className="border p-2 rounded w-full"
+              required
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={addProduct}
+          className="bg-green-500 text-white py-2 px-4 rounded mt-2"
+        >
+          + Add Product
+        </button>
+
         <select
           name="status"
           value={formData.status}
           onChange={handleChange}
-          className="border p-2 rounded bg-gray-100"
-          required
+          className="border p-2 rounded w-full mt-4"
         >
           <option value="Pending">Pending</option>
           <option value="Processing">Processing</option>
-          <option value="Completed">Completed</option>
           <option value="Shipped">Shipped</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Cancelled">Cancelled</option>
         </select>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
-          Submit Order
+
+        <button
+          type="submit"
+          className="bg-blue-500 text-white py-2 px-4 rounded mt-4 w-full"
+        >
+          Submit
         </button>
       </form>
     </div>
