@@ -1,5 +1,5 @@
-import React, { useState, useSyncExternalStore } from "react";
-import image from "../assets/image.png";
+import React, { useState} from "react";
+import image from "../../assets/image.png";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 const backendUrl = import.meta.env.VITE_BACKEND-URL;

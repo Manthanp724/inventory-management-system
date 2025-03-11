@@ -12,7 +12,7 @@ const ProductManagement = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [updatedProductOpen, setUpdatedProductOpen] = useState(false);
   const [showDiscription, setShowDiscription] = useState(false);
-  const [currentShowDiscription , setCurrentDiscription] = useState("");
+  const [currentShowDiscription, setCurrentDiscription] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -69,10 +69,10 @@ const ProductManagement = () => {
     setCurrentDiscription(product.description);
   };
 
-  const handleCloseDescription = (product)=> {
+  const handleCloseDescription = () => {
     setShowDiscription(false);
     setCurrentDiscription("");
-  }
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto bg-gray-50 rounded-xl shadow-xl transition-transform transform hover:scale-105 duration-300">
@@ -283,19 +283,20 @@ const ProductManagement = () => {
         </div>
       )}
       {showDiscription && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-50 transition-all duration-300">
+          <div className="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl max-w-xl w-full mx-4 relative">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
               Product Description
             </h2>
-            <p className="text-gray-700">{currentShowDiscription}</p>
-            <Button
-              variant="outlined"
+            <p className="text-gray-700 text-base leading-relaxed max-h-60 overflow-y-auto pr-2">
+              {currentShowDiscription}
+            </p>
+            <button
               onClick={handleCloseDescription}
-              className="mt-4 text-indigo-600 hover:bg-indigo-100 focus:ring-4 focus:ring-indigo-300 rounded-lg transition-all"
+              className="mt-6 w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl shadow-md hover:shadow-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-300"
             >
               Close
-            </Button>
+            </button>
           </div>
         </div>
       )}
