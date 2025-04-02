@@ -1,11 +1,19 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaBars, FaTimes, FaCaretDown } from "react-icons/fa";
 import image from "../assets/image.png";
+
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const navigate = useNavigate();
+
+  const handleLogOut = () => {
+    navigate("/");
+
+  }
 
   return (
     <header className="bg-gradient-to-r from-blue-500 to-purple-700 text-white shadow-xl px-8 py-4 rounded-xl w-full z-40">
@@ -14,7 +22,7 @@ const Header = () => {
       IMS
     </Link>
     <nav className="hidden md:flex space-x-8">
-      {["Dashboard", "Orders", "Current Stock", "Sales"].map((item) => (
+      {["Dashboard", "Order", "Product"].map((item) => (
         <Link
           key={item}
           to={`/${item.toLowerCase().replace(" ", "")}`}
@@ -48,7 +56,7 @@ const Header = () => {
           }`}
         >
           <ul className="py-2">
-            <li className="px-5 py-3 hover:bg-red-100 text-red-600 cursor-pointer">Logout</li>
+            <button onClick={handleLogOut} className="px-5 py-3 hover:bg-red-100 text-red-600">Logout</button>
           </ul>
         </div>
       </div>
@@ -70,7 +78,7 @@ const Header = () => {
     }`}
   >
     <nav className="flex flex-col items-center space-y-4 py-4">
-      {["Dashboard", "All Orders", "In Stock", "Products"].map((item) => (
+      {["dashboard", "order", "product"].map((item) => (
         <Link
           key={item}
           to={`/${item.toLowerCase().replace(" ", "")}`}

@@ -28,7 +28,7 @@ app.use(productRoute)
 app.use('/category', categoryRoute)
 
 // Order Route
-app.use('/order' , orderRoute);
+app.use(orderRoute);
 
 // sales api
 app.use('/sales', salesRoute)

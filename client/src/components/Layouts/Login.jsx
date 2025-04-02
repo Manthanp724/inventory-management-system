@@ -1,27 +1,23 @@
-import React, { useState} from "react";
+import React, { useState, useContext } from "react";
 import image from "../../assets/image.png";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-const backendUrl = import.meta.env.VITE_BACKEND-URL;
-// const navigate = useNavigate();
-
+import { AuthContext } from "../../Context/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error , setError] = useState("")
+  
+  const { login, error, loading } = useContext(AuthContext); // Use AuthContext
 
-  const handleSubmit = async(e) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const response = await axios.post(`${backendUrl}/user/v1/login`, {email , password});
-      // Assuming successful signup and moving to the dashboard page
-      // navigate('/dashboard');
-      console.log("Response: " , response.data);
-    } catch (error) {
-      setError("An error has occured while login. Please try again");
+    const success = await login(email, password);
+    if(success){
+      navigate("/dashboard");
     }
-    console.log("Form submitted:", { email, password });
+    
   };
 
   return (
@@ -47,6 +43,8 @@ const Login = () => {
               Welcome back! Please enter your credentials.
             </p>
 
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <input
                 type="email"
@@ -69,8 +67,9 @@ const Login = () => {
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105"
+                disabled={loading}
               >
-                Log in
+                {loading ? "Logging in..." : "Log in"}
               </button>
 
               <p className="text-sm text-center mt-4 text-gray-600">

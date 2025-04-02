@@ -3,7 +3,8 @@ import "./index.css"
 import Signup from './components/Layouts/Signup'
 import Login from './components/Layouts/Login'
 import {Routes , Route} from "react-router-dom"
-import Order from "./Pages/Order"
+// import Order from "./Pages/Order"
+import Order from './components/Order/Order'
 import ProductManagement from './Pages/ProductManagement.'
 import Dashboard from './Pages/Dashboard'
 const App = () => {

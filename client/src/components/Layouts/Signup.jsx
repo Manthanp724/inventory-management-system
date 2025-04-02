@@ -1,32 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from "react";
 import image from "../../assets/image.png";
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
-// const navigate = useNavigate();
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../Context/AuthContext";
 
 const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [organizationName, setOrganizationName] = useState('');
+  const [organization, setOrganization] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); // For storing error messages
 
-  const handleSubmit = async(e) => {
+  const { signup, error, loading } = useContext(AuthContext); // Use AuthContext
+
+  const navigate = useNavigate();
+
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const response = await axios.post(`${backendUrl}/user/v1/signup` , {
-        name , email , phone , organizationName , password
-      });
-      // Assuming successful signup and moving to the dashboard page
-      // navigate('/dashboard');
-      console.log("Response: ", response.data);
-    } catch (error) {
-      setError("An error has occured while submitting the from");
+    const success = await signup(name, email, phone, password, organization);
+    if (success) {
+      navigate("/dashboard"); // Redirect on successful signup
     }
-    console.log("Form submitted:", { name, email, phone, organizationName, password });
   };
 
   return (
@@ -45,6 +39,8 @@ const Signup = () => {
             <p className="text-gray-600 text-sm text-center mb-6">
               Manage all your inventory efficiently. Let's get you all set up.
             </p>
+
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <input
@@ -78,8 +74,8 @@ const Signup = () => {
               <input
                 type="text"
                 placeholder="Organization Name"
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
+                value={organization}
+                onChange={(e) => setOrganization(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 required
               />
@@ -96,9 +92,9 @@ const Signup = () => {
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105"
-                onClick={handleSubmit}
+                disabled={loading}
               >
-                Sign up
+                {loading ? "Signing up..." : "Sign up"}
               </button>
 
               <p className="text-sm text-gray-600 text-center mt-4">
