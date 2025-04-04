@@ -67,65 +67,97 @@ const mongoose = require('mongoose');
 // }
 
 const createOrder = async (req, res) => {
-  try {
+    try {
       const { customerName, customerEmail, products } = req.body;
-
+  
+      // Validate required fields
       if (!customerName || !customerEmail) {
-          return res.status(400).json({ message: "Customer name and email are required" });
+        return res.status(400).json({ message: "Customer name and email are required" });
       }
-
+  
       if (!products || !Array.isArray(products) || products.length === 0) {
-          return res.status(400).json({ message: "At least one product is required" });
+        return res.status(400).json({ message: "At least one product is required" });
       }
-
+  
       let totalAmount = 0;
       const productUpdates = [];
       const productList = [];
-
+  
       for (const item of products) {
-          const product = await Product.findOne({ name: item.product });
-          
-          if (!product) {
-              return res.status(404).json({ message: `Product not found: ${item.product}` });
-          }
-
-          if (product.stock < item.quantity) {
-              return res.status(400).json({ message: `Insufficient stock for ${product.name}` });
-          }
-
-          totalAmount += product.price * item.quantity;
-          productList.push({ product: product._id, quantity: item.quantity });
-          productUpdates.push({
-              updateOne: {
-                  filter: { _id: product._id },
-                  update: { $inc: { stock: -item.quantity } }
-              }
+        let product;
+        
+        // Check if product is an ID (24-character hex string)
+        if (/^[0-9a-fA-F]{24}$/.test(item.product)) {
+          product = await Product.findById(item.product);
+        } 
+        // Otherwise treat as name
+        else {
+          product = await Product.findOne({ name: item.product });
+        }
+  
+        if (!product) {
+          return res.status(404).json({ message: `Product not found: ${item.product}` });
+        }
+  
+        if (product.stock < item.quantity) {
+          return res.status(400).json({ 
+            message: `Insufficient stock for ${product.name} (Available: ${product.stock}, Requested: ${item.quantity})`
           });
+        }
+  
+        // Calculate order total
+        totalAmount += product.price * item.quantity;
+        
+        // Prepare product list for order
+        productList.push({
+          product: product._id,
+          quantity: item.quantity,
+          productName: product.name, // Store name for reference
+          priceAtPurchase: product.price // Capture price at time of order
+        });
+        
+        // Prepare stock updates
+        productUpdates.push({
+          updateOne: {
+            filter: { _id: product._id },
+            update: { $inc: { stock: -item.quantity } }
+          }
+        });
       }
-
+  
+      // Create order
       const order = await Order.create({
-          customerName,
-          customerEmail,
-          products: productList,
-          totalAmount,
-          status: "Pending",
-          date: new Date()
+        customerName,
+        customerEmail,
+        products: productList,
+        totalAmount,
+        status: "Pending",
+        date: new Date()
       });
-
+  
+      // Update stock levels
       await Product.bulkWrite(productUpdates);
-
-      const populatedOrder = await Order.findById(order._id).populate("products.product", "name price");
-
+  
+      // Return populated order
+      const populatedOrder = await Order.findById(order._id)
+        .populate("products.product", "name price category");
+  
       res.status(201).json({
-          success: true,
-          message: "Order created successfully",
-          order: populatedOrder
+        success: true,
+        message: "Order created successfully",
+        order: populatedOrder
       });
-  } catch (error) {
+  
+    } catch (error) {
       console.error("Order creation error:", error);
-      res.status(500).json({ success: false, message: "Failed to create order", error: error.message });
-  }
-};
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create order", 
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
+  };
 
 
 

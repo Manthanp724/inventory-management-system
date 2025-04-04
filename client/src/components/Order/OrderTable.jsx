@@ -1,118 +1,250 @@
+// OrderTable.js
 import React from "react";
+import { FiArrowUp, FiArrowDown } from "react-icons/fi";
 
 const statusColors = {
-  Pending: "bg-yellow-500 text-white",
-  Processing: "bg-blue-500 text-white",
-  Shipped: "bg-purple-500 text-white",
-  Delivered: "bg-green-500 text-white",
-  Cancelled: "bg-red-500 text-white",
+  Pending: "bg-amber-100 text-amber-800 border-amber-300",
+  Processing: "bg-blue-100 text-blue-800 border-blue-300",
+  Shipped: "bg-indigo-100 text-indigo-800 border-indigo-300",
+  Delivered: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  Cancelled: "bg-rose-100 text-rose-800 border-rose-300",
 };
 
 const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  if (!dateString) return "N/A";
+  const options = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  };
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
 const formatCurrency = (amount) => {
-  if (typeof amount !== 'number') return '$0.00';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
+  if (typeof amount !== "number") return "$0.00";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(amount);
 };
 
-const OrderTable = ({ orders, isLoading, onEdit, onDelete }) => {
-  const orderList = React.useMemo(() => {
-    if (Array.isArray(orders)) return orders;
-    if (orders && Array.isArray(orders.orders)) return orders.orders;
-    if (orders && Array.isArray(orders.data)) return orders.data;
-    return [];
-  }, [orders]);
+const OrderTable = ({
+  orders,
+  isLoading,
+  onEdit,
+  onDelete,
+  sortConfig,
+  requestSort,
+}) => {
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === "asc" ? (
+      <FiArrowUp className="ml-1" />
+    ) : (
+      <FiArrowDown className="ml-1" />
+    );
+  };
 
   if (isLoading) {
     return (
-      <div className="mt-4 bg-white p-4 rounded-lg shadow-lg h-[calc(100vh-200px)] overflow-y-auto">
-        <div className="text-center text-gray-500 text-lg py-6">Loading orders...</div>
+      <div className="mt-4 bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+          <div className="text-gray-600">Loading orders...</div>
+        </div>
       </div>
     );
   }
 
-  if (!orderList || orderList.length === 0) {
+  if (!orders || orders.length === 0) {
     return (
-      <div className="mt-4 bg-white p-4 rounded-lg shadow-lg h-[calc(100vh-200px)] overflow-y-auto">
-        <p className="text-center text-gray-500 text-lg py-6">No orders found.</p>
+      <div className="mt-4 bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No orders found
+          </h3>
+          <p className="text-gray-500">
+            Try adjusting your search or filter criteria
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mt-4 bg-white p-4 rounded-lg shadow-lg h-[calc(100vh-200px)] overflow-y-auto">
-      <table className="w-full border-collapse rounded-xl shadow-xl overflow-hidden bg-white">
-        <thead className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-          <tr>
-            <th className="px-6 py-3 text-left font-bold">#</th>
-            <th className="px-6 py-3 text-left font-bold">Date</th>
-            <th className="px-6 py-3 text-left font-bold">Customer</th>
-            <th className="px-6 py-3 text-left font-bold">Products</th>
-            <th className="px-6 py-3 text-left font-bold">Total</th>
-            <th className="px-6 py-3 text-left font-bold">Status</th>
-            <th className="px-6 py-3 text-center font-bold">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orderList.map((order, index) => (
-            <tr key={order._id || index} className="border-b hover:bg-gray-100 transition">
-              <td className="px-6 py-4 font-semibold text-gray-700">{index + 1}</td>
-              <td className="px-6 py-4 text-gray-600">
-                {formatDate(order.createdAt || order.date)}
-              </td>
-              <td className="px-6 py-4 text-gray-600">
-                <div className="font-medium">{order.customerName || 'N/A'}</div>
-                <div className="text-sm text-gray-500">{order.customerEmail || ''}</div>
-              </td>
-              <td className="px-6 py-4 text-gray-600">
-                <div className="space-y-1">
-                  {(order.products || []).map((item, i) => (
-                    <div key={item._id || i} className="text-sm">
-                      <span className="font-medium">
-                        {item.product?.name || item.name || 'Unknown Product'}
-                      </span>
-                      <span className="text-gray-500 ml-2">
-                        (x{item.quantity || 1}) - {formatCurrency(item.product?.price || item.price || 0)}
-                      </span>
-                    </div>
-                  ))}
+    <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => requestSort("_id")}
+              >
+                <div className="flex items-center">
+                  Order ID
+                  {getSortIcon("_id")}
                 </div>
-              </td>
-              <td className="px-6 py-4 font-medium text-gray-700">
-                {formatCurrency(order.totalAmount || 0)}
-              </td>
-              <td className="px-6 py-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                  statusColors[order.status] || statusColors.Pending
-                }`}>
-                  {order.status || 'Pending'}
-                </span>
-              </td>
-              <td className="px-6 py-4 text-center space-x-2">
-                <button 
-                  onClick={() => onEdit(order)}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 shadow"
-                >
-                  Edit Status
-                </button>
-                <button
-                  onClick={() => onDelete(order._id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 shadow"
-                >
-                  Delete
-                </button>
-              </td>
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => requestSort("createdAt")}
+              >
+                <div className="flex items-center">
+                  Date
+                  {getSortIcon("createdAt")}
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Customer
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Products
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                onClick={() => requestSort("totalAmount")}
+              >
+                <div className="flex items-center">
+                  Total
+                  {getSortIcon("totalAmount")}
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Actions
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {orders.map((order) => (
+              <tr
+                key={order._id}
+                className="hover:bg-gray-50 transition-colors"
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    #{order._id.slice(-6)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">
+                    {formatDate(order.createdAt)}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {order.customerName}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {order.customerEmail}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 max-w-xs">
+                    {(order.products || []).slice(0, 2).map((item, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-150">
+                      <span className="font-medium text-gray-800">
+                        {item.product?.name || item.name}
+                      </span>
+                      <div className="flex items-center">
+                        <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-full">
+                          ×{item.quantity}
+                        </span>
+                        {item.price && (
+                          <span className="ml-2 text-sm font-medium text-gray-600">
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    ))}
+                    {order.products?.length > 2 && (
+                      <div className="text-sm text-indigo-600 mt-1">
+                        +{order.products.length - 2} more items
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {formatCurrency(order.totalAmount || 0)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-sm font-medium border ${
+                      statusColors[order.status] || statusColors.Pending
+                    }`}
+                  >
+                    {order.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex gap-2">
+                    {/* Edit Button */}
+                    <button
+                      onClick={() => onEdit(order)}
+                      className="
+      px-3 py-1.5
+      text-indigo-600 hover:text-white
+      bg-white hover:bg-indigo-600
+      border border-indigo-300 hover:border-indigo-600
+      rounded-md
+      text-sm font-medium
+      transition-colors duration-200
+      focus:outline-none focus:ring-1 focus:ring-indigo-500
+    "
+                    >
+                      Edit
+                    </button>
+
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => onDelete(order._id)}
+                      className="
+      px-3 py-1.5
+      text-rose-600 hover:text-white
+      bg-white hover:bg-rose-600
+      border border-rose-300 hover:border-rose-600
+      rounded-md
+      text-sm font-medium
+      transition-colors duration-200
+      focus:outline-none focus:ring-1 focus:ring-rose-500
+    "
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
