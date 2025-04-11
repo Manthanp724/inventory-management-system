@@ -66,4 +66,19 @@ const handleLogin = async(req, res) => {
         return res.status(500).json({message : "Login error"});
     }
 }
-module.exports = {handleSignup , handleLogin};
+
+// This will help me to get the user details which i can show to the profile.
+const getUserDetails = async (req , res) => {
+  try {
+    const user = await User.findOne().select("-password -__v");
+
+    if(!user){
+      return res.status(404).json({message : "User/Admin account not found"});
+    }
+    return res.status(200).json({message : "User Details retrived successfully: ", success : true, user});
+
+  } catch (error) {
+    return res.status(500).json({message : "Error while getting user Details: ", success  :false, error});
+  }
+}
+module.exports = {handleSignup , handleLogin, getUserDetails};
