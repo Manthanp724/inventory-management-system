@@ -1,9 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Header from "../utils/Header";
-import { fetchAllProducts, createProduct, updateProduct, deleteProduct } from "../Services/ProductService";
-import { Edit, Delete, Visibility, Add, Close, ArrowBack } from "@mui/icons-material";
+import {
+  fetchAllProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  fetchAllCategories,
+} from "../Services/ProductService";
+import {
+  Edit,
+  Delete,
+  Visibility,
+  Add,
+  Close,
+  ArrowBack,
+} from "@mui/icons-material";
 
 const ProductManagement = () => {
+  // State management
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
     category: "",
@@ -20,33 +34,85 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [category, setCategory] = useState([]);
 
+  // Debounce search term
   useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchTerm]);
+
+  // Data fetching with cleanup
+  useEffect(() => {
+    let isMounted = true;
+
     const loadProducts = async () => {
       try {
         setLoading(true);
         const productData = await fetchAllProducts();
-        setProducts(productData || []);
+        if (isMounted) {
+          setProducts(productData || []);
+        }
       } catch (error) {
-        setError(error.message || "Failed to load products");
+        if (isMounted) {
+          setError(error.message || "Failed to load products");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
+
     loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product.category?.name || product.category || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Load Category
 
-  const handleInputChange = (e) => {
+  useEffect ( () => {
+    const loadCategory = async () => {
+      try {
+        const cat = await fetchAllCategories();
+        console.log("Categories loaded:", cat);
+        setCategory(cat);
+      } catch (error) {
+        console.log("Error while load category: ", error);
+        setError(error);
+      }
+    }
+    loadCategory()
+  },[])
+
+  // Optimized filtering with useMemo
+  const filteredProducts = useMemo(() => {
+    return products.filter(
+      (product) =>
+        product.name
+          .toLowerCase()
+          .includes(debouncedSearchTerm.toLowerCase()) ||
+        (product.category?.name || product.category || "")
+          .toLowerCase()
+          .includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [products, debouncedSearchTerm]);
+
+  // Memoized handlers
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       category: "",
       name: "",
@@ -58,107 +124,160 @@ const ProductManagement = () => {
     setEditingProductId(null);
     setOpenForm(false);
     setError(null);
-  };
+  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    if (!formData.category || !formData.name || !formData.stock || !formData.price) {
-      setError("All fields except description are required!");
-      return;
-    }
-  
-    try {
-      setLoading(true);
-      const productData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        stock: parseInt(formData.stock),
-        category: editingProductId ? categoryId : formData.category,
-      };
-  
-      if (editingProductId) {
-        const updatedProduct = await updateProduct(editingProductId, productData);
-        // Optimistically update with the name we have
-        const updatedProductWithCategory = {
-          ...updatedProduct,
-          category: {
-            _id: categoryId,
-            name: formData.category
-          }
-        };
-        setProducts(products.map(p => 
-          p._id === editingProductId ? updatedProductWithCategory : p
-        ));
-        
-        // Then refetch to ensure we have correct data
-        const freshProducts = await fetchAllProducts();
-        setProducts(freshProducts || []);
-      } else {
-        const newProduct = await createProduct(productData);
-        setProducts([...products, newProduct]);
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+
+      if (
+        !formData.category ||
+        !formData.name ||
+        !formData.stock ||
+        !formData.price
+      ) {
+        setError("All fields except description are required!");
+        return;
       }
-      resetForm();
-    } catch (error) {
-      setError(error.message || "Failed to save product");
-      // Optionally refetch products here to reset state
-      const freshProducts = await fetchAllProducts();
-      setProducts(freshProducts || []);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleDelete = async (id) => {
+      try {
+        setLoading(true);
+        const productData = {
+          ...formData,
+          price: parseFloat(formData.price),
+          stock: parseInt(formData.stock),
+          category: editingProductId ? categoryId : formData.category,
+        };
+
+        if (editingProductId) {
+          const updatedProduct = await updateProduct(
+            editingProductId,
+            productData
+          );
+          setProducts((prev) =>
+            prev.map((p) =>
+              p._id === editingProductId
+                ? {
+                    ...updatedProduct,
+                    category: {
+                      _id: categoryId,
+                      name: formData.category,
+                    },
+                  }
+                : p
+            )
+          );
+        } else {
+          const newProduct = await createProduct(productData);
+          setProducts((prev) => [...prev, newProduct]);
+        }
+        resetForm();
+      } catch (error) {
+        setError(error.message || "Failed to save product");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [formData, editingProductId, categoryId, resetForm]
+  );
+
+  const handleDelete = useCallback(async (id) => {
     try {
       setLoading(true);
       await deleteProduct(id);
-      setProducts(products.filter((product) => product._id !== id));
+      setProducts((prev) => prev.filter((product) => product._id !== id));
     } catch (error) {
       setError(error.message || "Failed to delete product");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleEdit = (product) => {
+  const handleEdit = useCallback((product) => {
     setFormData({
-      category: product.category?.name || product.category || "", // Show name
+      category: product.category?.name || product.category || "",
       name: product.name || "",
       stock: product.stock?.toString() || "",
       price: product.price?.toString() || "",
       description: product.description || "",
     });
-    // Store the actual ID separately
     setCategoryId(product.category?._id || product.category || "");
     setEditingProductId(product._id);
     setOpenForm(true);
-  };
+  }, []);
 
-  const handleShowDescription = (description) => {
+  const handleShowDescription = useCallback((description) => {
     setCurrentDescription(description || "No description available");
     setShowDescription(true);
-  };
+  }, []);
 
+  // Stats calculations with useMemo
+  const stats = useMemo(() => {
+    const totalProducts = products.length;
+    const totalStock = products.reduce(
+      (sum, product) => sum + (product.stock || 0),
+      0
+    );
+    const totalValue = products.reduce(
+      (sum, product) => sum + (product.stock * product.price || 0),
+      0
+    );
+    const totalCategories = new Set(
+      products.map((p) => p.category?.name || p.category || "")
+    ).size;
+
+    return { totalProducts, totalStock, totalValue, totalCategories };
+  }, [products]);
+
+  // Loading skeleton
   if (loading && products.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-[80vh]">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-full">
+          {/* Skeleton Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-gray-200 rounded-xl p-6 h-24 animate-pulse"
+              ></div>
+            ))}
+          </div>
+
+          {/* Skeleton Table Header */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+            <div className="h-16 bg-gray-100 animate-pulse"></div>
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="p-4 border-b border-gray-200 animate-pulse"
+              >
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-8">
-        <h2 className="text-xl font-semibold text-red-600 mb-4">Error: {error}</h2>
-        <button
-          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-          onClick={() => setError(null)}
-        >
-          <ArrowBack className="h-5 w-5" />
-          Try Again
-        </button>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="text-center p-8">
+          <h2 className="text-xl font-semibold text-red-600 mb-4">
+            Error: {error}
+          </h2>
+          <button
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2 mx-auto"
+            onClick={() => setError(null)}
+          >
+            <ArrowBack className="h-5 w-5" />
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -171,7 +290,9 @@ const ProductManagement = () => {
       <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-full">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-          <h1 className="text-3xl font-bold text-gray-800">Product Inventory</h1>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Product Inventory
+          </h1>
           <div className="flex gap-4 w-full sm:w-auto">
             <input
               type="text"
@@ -198,13 +319,23 @@ const ProductManagement = () => {
           <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl p-6 text-white shadow-lg">
             <div className="flex items-center">
               <div className="p-3 bg-blue-500 bg-opacity-20 rounded-full mr-4">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
                 </svg>
               </div>
               <div>
                 <p className="text-lg opacity-80">Total Products</p>
-                <p className="text-2xl font-bold">{products.length}</p>
+                <p className="text-2xl font-bold">{stats.totalProducts}</p>
               </div>
             </div>
           </div>
@@ -212,15 +343,23 @@ const ProductManagement = () => {
           <div className="bg-gradient-to-r from-green-600 to-green-400 rounded-xl p-6 text-white shadow-lg">
             <div className="flex items-center">
               <div className="p-3 bg-green-500 bg-opacity-20 rounded-full mr-4">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                  />
                 </svg>
               </div>
               <div>
                 <p className="text-lg opacity-80">In Stock</p>
-                <p className="text-2xl font-bold">
-                  {products.reduce((sum, product) => sum + (product.stock || 0), 0)}
-                </p>
+                <p className="text-2xl font-bold">{stats.totalStock}</p>
               </div>
             </div>
           </div>
@@ -228,14 +367,24 @@ const ProductManagement = () => {
           <div className="bg-gradient-to-r from-purple-600 to-purple-400 rounded-xl p-6 text-white shadow-lg">
             <div className="flex items-center">
               <div className="p-3 bg-purple-500 bg-opacity-20 rounded-full mr-4">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div>
                 <p className="text-lg opacity-80">Total Value</p>
                 <p className="text-2xl font-bold">
-                  ${products.reduce((sum, product) => sum + (product.stock * product.price || 0), 0).toFixed(2)}
+                  ${stats.totalValue.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -244,15 +393,23 @@ const ProductManagement = () => {
           <div className="bg-gradient-to-r from-amber-600 to-amber-400 rounded-xl p-6 text-white shadow-lg">
             <div className="flex items-center">
               <div className="p-3 bg-amber-500 bg-opacity-20 rounded-full mr-4">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                  />
                 </svg>
               </div>
               <div>
                 <p className="text-lg opacity-80">Categories</p>
-                <p className="text-2xl font-bold">
-                  {new Set(products.map(p => p.category?.name || p.category || '')).size}
-                </p>
+                <p className="text-2xl font-bold">{stats.totalCategories}</p>
               </div>
             </div>
           </div>
@@ -261,7 +418,7 @@ const ProductManagement = () => {
         {/* Product Form Modal */}
         {openForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div 
+            <div
               className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -270,7 +427,7 @@ const ProductManagement = () => {
                   <h2 className="text-2xl font-bold text-gray-800">
                     {editingProductId ? "Edit Product" : "Add Product"}
                   </h2>
-                  <button 
+                  <button
                     onClick={resetForm}
                     className="text-gray-500 hover:text-gray-700"
                   >
@@ -287,19 +444,28 @@ const ProductManagement = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                      <input
-                        type="text"
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                      </label>
+                      <select
                         name="category"
                         value={formData.category}
                         onChange={handleInputChange}
                         required
-                        disabled={!!editingProductId}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                      />
+                      >
+                        <option value="">Select a category</option>
+                        {category.map((cat) => (
+                          <option key={cat._id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Product Name
+                      </label>
                       <input
                         type="text"
                         name="name"
@@ -310,7 +476,9 @@ const ProductManagement = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stock Quantity
+                      </label>
                       <input
                         type="number"
                         name="stock"
@@ -322,9 +490,13 @@ const ProductManagement = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Price
+                      </label>
                       <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">$</span>
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                          $
+                        </span>
                         <input
                           type="number"
                           name="price"
@@ -340,7 +512,9 @@ const ProductManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
                     <textarea
                       name="description"
                       value={formData.description}
@@ -379,106 +553,89 @@ const ProductManagement = () => {
         {/* Product List */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800">Product List</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Product List
+            </h2>
           </div>
-          
+
           {filteredProducts.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Product
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Category
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Stock
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Price
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Status
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProducts.map((product) => (
-                    <tr key={product._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm">
-                            {product.name.charAt(0)}
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                              {product.description?.substring(0, 50)}{product.description?.length > 50 ? '...' : ''}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {product.category?.name || product.category || 'Uncategorized'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-sm leading-5 font-semibold rounded-full ${product.stock > 10 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          {product.stock}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${product.price?.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-sm leading-5 font-semibold rounded-full ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleEdit(product)}
-                            className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
-                            title="Edit"
-                          >
-                            <Edit className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product._id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
-                            title="Delete"
-                          >
-                            <Delete className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleShowDescription(product.description)}
-                            className="text-purple-600 hover:text-purple-900 p-1 rounded-full hover:bg-purple-50"
-                            title="View Description"
-                          >
-                            <Visibility className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                    <ProductRow
+                      key={product._id}
+                      product={product}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onShowDescription={handleShowDescription}
+                    />
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
             <div className="p-8 text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No products found
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm ? 'Try a different search term' : 'Get started by adding a new product'}
+                {searchTerm
+                  ? "Try a different search term"
+                  : "Get started by adding a new product"}
               </p>
             </div>
           )}
@@ -487,14 +644,16 @@ const ProductManagement = () => {
         {/* Description Modal */}
         {showDescription && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div 
+            <div
               className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800">Product Description</h2>
-                  <button 
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Product Description
+                  </h2>
+                  <button
                     onClick={() => setShowDescription(false)}
                     className="text-gray-500 hover:text-gray-700"
                   >
@@ -503,7 +662,9 @@ const ProductManagement = () => {
                 </div>
                 <div className="prose max-w-none">
                   {currentDescription || (
-                    <p className="text-gray-500 italic">No description available</p>
+                    <p className="text-gray-500 italic">
+                      No description available
+                    </p>
                   )}
                 </div>
               </div>
@@ -514,5 +675,84 @@ const ProductManagement = () => {
     </div>
   );
 };
+
+// Memoized Product Row Component
+const ProductRow = React.memo(
+  ({ product, onEdit, onDelete, onShowDescription }) => (
+    <tr className="hover:bg-gray-50 transition-colors">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm">
+            {product.name.charAt(0)}
+          </div>
+          <div className="ml-4">
+            <div className="text-sm font-medium text-gray-900">
+              {product.name}
+            </div>
+            <div className="text-sm text-gray-500 truncate max-w-xs">
+              {product.description?.substring(0, 50)}
+              {product.description?.length > 50 ? "..." : ""}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="px-2 inline-flex text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+          {product.category?.name || product.category || "Uncategorized"}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span
+          className={`px-2 inline-flex text-sm leading-5 font-semibold rounded-full ${
+            product.stock > 10
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {product.stock}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${product.price?.toFixed(2)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span
+          className={`px-2 inline-flex text-sm leading-5 font-semibold rounded-full ${
+            product.stock > 0
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {product.stock > 0 ? "In Stock" : "Out of Stock"}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => onEdit(product)}
+            className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
+            title="Edit"
+          >
+            <Edit className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => onDelete(product._id)}
+            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
+            title="Delete"
+          >
+            <Delete className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => onShowDescription(product.description)}
+            className="text-purple-600 hover:text-purple-900 p-1 rounded-full hover:bg-purple-50"
+            title="View Description"
+          >
+            <Visibility className="h-5 w-5" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  )
+);
 
 export default ProductManagement;

@@ -22,7 +22,7 @@ app.use(cors())
 app.use('/user/v1', userRoutes)
 
 // Product Route
-app.use(productRoute)
+app.use('/products', productRoute)
 
 // Category routes
 app.use('/category', categoryRoute)

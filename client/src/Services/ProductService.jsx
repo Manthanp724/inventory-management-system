@@ -4,6 +4,17 @@ import axios from "axios"
 // console.log("URL: ", BACKEND_URL);
 
 
+// Fetch all the categories
+export const fetchAllCategories = async () => {
+    try {
+        const response = await axios.get("http://localhost:8080/category/categories");
+        console.log("Response fron the fetchAllCategory: ", response.data.category);
+        return response.data.category;
+    } catch (error) {
+        console.log(error,message);
+    }
+}
+
 // fetch all products
 
 export const fetchAllProducts = async () => {

@@ -1,6 +1,6 @@
 const Order = require("../models/OrderSchema.js");
 const mongoose = require('mongoose');
-
+const Product  = require("../models/ProductSchema.js")
 // ✅ Get Total Sales Data
 const getTotalSales = async (req, res) => {
     try {
@@ -20,18 +20,19 @@ const getTotalSales = async (req, res) => {
     }
 };
 
-// ✅ Get Sales by Category which is not working now.
+// ✅ Get Sales by Category which is not working now. Tried a lot but not working.
 const getSalesByCategory = async (req, res) => {
     try {
         const { categoryId } = req.params;
         const { startDate, endDate, sort } = req.query;
-        let matchStage = { "productDetails.category": new mongoose.Types.ObjectId(categoryId) };
 
-        if (startDate && endDate) {
-            matchStage.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        // Validate category ID format
+        if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+            return res.status(400).json({ message: "Invalid category ID format" });
         }
 
-        const salesByCategory = await Order.aggregate([
+        // Create base pipeline
+        const pipeline = [
             { $unwind: "$products" },
             {
                 $lookup: {
@@ -42,11 +43,35 @@ const getSalesByCategory = async (req, res) => {
                 }
             },
             { $unwind: "$productDetails" },
-            { $match: matchStage },
+            { 
+                $match: { 
+                    "productDetails.category": new mongoose.Types.ObjectId(categoryId) 
+                } 
+            }
+        ];
+
+        // Add date filtering if provided
+        if (startDate && endDate) {
+            pipeline[3].$match.createdAt = { 
+                $gte: new Date(startDate), 
+                $lte: new Date(endDate) 
+            };
+        } else if (startDate || endDate) {
+            return res.status(400).json({
+                message: "Please provide both startDate and endDate, or neither"
+            });
+        }
+
+        // Continue with the rest of the pipeline
+        pipeline.push(
             {
                 $group: {
                     _id: "$productDetails.category",
-                    totalRevenue: { $sum: { $multiply: ["$products.quantity", "$productDetails.price"] } },
+                    totalRevenue: { 
+                        $sum: { 
+                            $multiply: ["$products.quantity", "$productDetails.price"] 
+                        } 
+                    },
                     totalSold: { $sum: "$products.quantity" }
                 }
             },
@@ -63,15 +88,33 @@ const getSalesByCategory = async (req, res) => {
                 $project: {
                     categoryName: "$categoryDetails.name",
                     totalRevenue: 1,
-                    totalSold: 1
+                    totalSold: 1,
+                    _id: 0
                 }
-            },
-            sort ? { $sort: { totalRevenue: sort === "asc" ? 1 : -1 } } : null
-        ].filter(Boolean));
+            }
+        );
 
-        return res.status(200).json({ message: "Sales by category retrieved", salesByCategory });
+        // Add sorting if specified
+        if (sort) {
+            pipeline.push({ 
+                $sort: { totalRevenue: sort === "asc" ? 1 : -1 } 
+            });
+        }
+
+        const salesByCategory = await Order.aggregate(pipeline);
+
+        return res.status(200).json({ 
+            message: salesByCategory.length > 0 
+                ? "Sales by category retrieved" 
+                : "No sales found for this category",
+            salesByCategory
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching sales by category", error: error.message });
+        console.error("Error in getSalesByCategory:", error);
+        res.status(500).json({ 
+            message: "Error fetching sales by category", 
+            error: error.message 
+        });
     }
 };
 
@@ -119,21 +162,29 @@ const getDailySales = async (req, res) => {
 // ✅ Get Customer Purchase History
 const getCustomerPurchaseHistory = async (req, res) => {
     try {
-        const { email } = req.params;
+        const { email } = req.query; // Changed from req.params to req.query
 
         if (!email) {
             return res.status(400).json({ message: "Customer email is required" });
         }
 
-        const purchaseHistory = await Order.find({ customerEmail: email }).populate("products.product", "name price");
+        const purchaseHistory = await Order.find({ customerEmail: email })
+            .populate("products.product", "name price")
+            .sort({ createdAt: -1 }); // Added sorting by newest first
 
         if (!purchaseHistory.length) {
             return res.status(404).json({ message: "No purchases found for this customer" });
         }
 
-        return res.status(200).json({ message: "Customer purchase history retrieved", purchaseHistory });
+        return res.status(200).json({ 
+            message: "Customer purchase history retrieved", 
+            data: purchaseHistory // Changed from purchaseHistory to data for consistency
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching purchase history", error: error.message });
+        res.status(500).json({ 
+            message: "Error fetching purchase history", 
+            error: error.message 
+        });
     }
 };
 

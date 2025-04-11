@@ -22,6 +22,7 @@ const Header = () => {
     { name: "Orders", path: "/order", icon: "📦" },
     { name: "Products", path: "/product", icon: "🛍️" },
     { name: "Customers", path: "/customers", icon: "👥" },
+    { name: "Category", path: "/category", icon :"📋" }
   ];
 
   const handleLogout = () => {

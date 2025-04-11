@@ -22,6 +22,6 @@ router.get("/monthly", getMonthlySales);
 router.get("/daily", getDailySales);
 
 // ✅ Get customer purchase history
-router.get("/customer/:email", getCustomerPurchaseHistory);
+router.get("/customer", getCustomerPurchaseHistory);
 
 module.exports = router;

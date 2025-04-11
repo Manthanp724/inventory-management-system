@@ -1,6 +1,6 @@
-// OrderTable.js
 import React from "react";
 import { FiArrowUp, FiArrowDown } from "react-icons/fi";
+import { generateReceiptHTML } from "./receiptHtml";
 
 const statusColors = {
   Pending: "bg-amber-100 text-amber-800 border-amber-300",
@@ -46,6 +46,14 @@ const OrderTable = ({
       <FiArrowDown className="ml-1" />
     );
   };
+
+  const handlePrintReceipt = (order) => {
+    const printWindow = window.open('', '_blank');
+    const receiptHTML = generateReceiptHTML(order, formatDate, formatCurrency);
+    printWindow.document.write(receiptHTML);
+    printWindow.document.close();
+  };
+
 
   if (isLoading) {
     return (
@@ -205,39 +213,62 @@ const OrderTable = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex gap-2">
-                    {/* Edit Button */}
-                    <button
-                      onClick={() => onEdit(order)}
-                      className="
-      px-3 py-1.5
-      text-indigo-600 hover:text-white
-      bg-white hover:bg-indigo-600
-      border border-indigo-300 hover:border-indigo-600
-      rounded-md
-      text-sm font-medium
-      transition-colors duration-200
-      focus:outline-none focus:ring-1 focus:ring-indigo-500
-    "
-                    >
-                      Edit
-                    </button>
-
-                    {/* Delete Button */}
-                    <button
-                      onClick={() => onDelete(order._id)}
-                      className="
-      px-3 py-1.5
-      text-rose-600 hover:text-white
-      bg-white hover:bg-rose-600
-      border border-rose-300 hover:border-rose-600
-      rounded-md
-      text-sm font-medium
-      transition-colors duration-200
-      focus:outline-none focus:ring-1 focus:ring-rose-500
-    "
-                    >
-                      Delete
-                    </button>
+                    {order.status === 'Delivered' ? (
+                      // Receipt Button for delivered orders
+                      <button
+                        onClick={() => handlePrintReceipt(order)}
+                        className="
+                          px-3 py-1.5
+                          text-emerald-600 hover:text-white
+                          bg-white hover:bg-emerald-600
+                          border border-emerald-300 hover:border-emerald-600
+                          rounded-md
+                          text-sm font-medium
+                          transition-colors duration-200
+                          focus:outline-none focus:ring-1 focus:ring-emerald-500
+                          flex items-center
+                        "
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Receipt
+                      </button>
+                    ) : (
+                      // Edit and Delete buttons for non-delivered orders
+                      <>
+                        <button
+                          onClick={() => onEdit(order)}
+                          className="
+                            px-3 py-1.5
+                            text-indigo-600 hover:text-white
+                            bg-white hover:bg-indigo-600
+                            border border-indigo-300 hover:border-indigo-600
+                            rounded-md
+                            text-sm font-medium
+                            transition-colors duration-200
+                            focus:outline-none focus:ring-1 focus:ring-indigo-500
+                          "
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => onDelete(order._id)}
+                          className="
+                            px-3 py-1.5
+                            text-rose-600 hover:text-white
+                            bg-white hover:bg-rose-600
+                            border border-rose-300 hover:border-rose-600
+                            rounded-md
+                            text-sm font-medium
+                            transition-colors duration-200
+                            focus:outline-none focus:ring-1 focus:ring-rose-500
+                          "
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

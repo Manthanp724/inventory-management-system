@@ -7,6 +7,8 @@ import {Routes , Route} from "react-router-dom"
 import Order from './components/Order/Order'
 import ProductManagement from './Pages/ProductManagement.'
 import Dashboard from './Pages/Dashboard'
+import Customers from './Pages/Customer'
+import Category from './Pages/Category'
 const App = () => {
   return (
     <div>
@@ -16,8 +18,9 @@ const App = () => {
         <Route path='/order' element = {<Order/>}/>
         <Route path='/product' element = {<ProductManagement/>} />
         <Route path='/dashboard' element = {<Dashboard/>} />
+        <Route path='/customers' element={<Customers/>} />
+        <Route path= '/category' element= {<Category/>} />
       </Routes>
-      {/* <Sidebar/> */}
     </div>
   )
 }
